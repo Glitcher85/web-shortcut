@@ -1,8 +1,7 @@
-import webbrowser, datetime
+import webbrowser, datetime, logging
 from time import sleep
 from keyboard import read_key
-try:
-    from save import mapping
+try: from save import mapping
 except ModuleNotFoundError:
     with open('save.py', 'w') as save:
         save.write("""
@@ -28,14 +27,54 @@ mapping = {
         """)
         exit()
 
+class LogHandler():
+    def __init__(self):
+        self.day = datetime.date.today().day
+        self.month = datetime.date.today().month
+        self.year = datetime.date.today().year
+        self.minute = datetime.datetime.today().minute
+        self.hour = datetime.datetime.today().hour
+
+    def print_errors(self, filename, error):
+        if self.hour > 12:
+            self.hour -= 12
+            filename.write("[{}-{}-{}]{}:{}PM: {}\n".format(self.day, self.month, self.year, self.hour, self.minute, error))
+        elif self.hour == 12:
+            filename.write("[{}-{}-{}]{}:{}PM: {}\n".format(self.day, self.month, self.year, self.hour, self.minute, error))
+        elif self.hour == 0:
+            filename.write("[{}-{}-{}]{}:{}AM: {}\n".format(self.day, self.month, self.year, self.hour, self.minute, error))
+        else:
+            filename.write("[{}-{}-{}]{}:{}AM: {}\n".format(self.day, self.month, self.year, self.hour, self.minute, error))
+
+    def print_logs(self, key, url):
+        if self.hour > 12:
+            self.hour -= 12
+            logging.info("[{}-{}-{}]{}:{}PM: [{}] => [{}]\n".format(self.day, self.month, self.year, self.hour, self.minute, key, url))
+        elif self.hour == 12:
+            logging.info("[{}-{}-{}]{}:{}PM: [{}] => [{}]\n".format(self.day, self.month, self.year, self.hour, self.minute, key, url))
+        elif self.hour == 0:
+            logging.info("[{}-{}-{}]{}:{}AM: [{}] => [{}]\n".format(self.day, self.month, self.year, self.hour, self.minute, key, url))
+        else:
+            logging.info("[{}-{}-{}]{}:{}AM: [{}] => [{}]\n".format(self.day, self.month, self.year, self.hour, self.minute, key, url))
+
+logging.basicConfig(
+    filename = r'..\key_logs.log',
+    level = logging.INFO,
+    format = '%(message)s'
+)
+
 if __name__ == "__main__":
-    keys = ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "home", "end", "delete", "insert", "pause"]
+    log_handler = LogHandler()
     while True:
         try:
             key = read_key()
-            if key in keys:
+            if key in mapping:
                 if mapping[key] != "":
                     webbrowser.open(url=mapping[key])
+                    log_handler.print_logs(
+                        key = key,
+                        url = mapping[key]
+                    )
                     sleep(1)
                 else:
                     continue
@@ -43,18 +82,7 @@ if __name__ == "__main__":
                 continue
         except Exception as error:
             with open(r'..\traceback.txt', 'a+') as traceback:
-                day = datetime.date.today().day
-                month = datetime.date.today().month
-                year = datetime.date.today().year
-                minute = datetime.datetime.today().minute
-                hour = datetime.datetime.today().hour
-                if hour > 12:
-                    hour -= 12
-                    traceback.write("[{}-{}-{}]{}:{}PM: {}\n".format(day, month, year, hour, minute, error))
-                elif hour == 12:
-                    traceback.write("[{}-{}-{}]{}:{}PM: {}\n".format(day, month, year, hour, minute, error))
-                elif hour == 0:
-                    traceback.write("[{}-{}-{}]{}:{}AM: {}\n".format(day, month, year, hour, minute, error))
-                else:
-                    traceback.write("[{}-{}-{}]{}:{}AM: {}\n".format(day, month, year, hour, minute, error))
-                break
+                log_handler.print_errors(
+                    filename = traceback,
+                    error = error
+                ); break
