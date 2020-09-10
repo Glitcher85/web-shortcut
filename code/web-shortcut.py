@@ -1,30 +1,10 @@
-import webbrowser, datetime, logging
+import importlib, webbrowser, datetime, logging, script
 from time import sleep
 from keyboard import read_key
-try: from save import mapping
+try: import save
 except ModuleNotFoundError:
     with open('save.py', 'w') as save:
-        save.write("""
-mapping = {
-    "f1": "https://www.google.com",
-    "f2": "https://www.youtube.com",
-    "f3": "https://www.discord.com",
-    "f4": "https://www.twitch.tv",
-    "f5": "https://www.github.com",
-    "f6": "",
-    "f7": "",
-    "f8": "",
-    "f9": "",
-    "f10": "",
-    "f11": "",
-    "f12": "",
-    "home": "",
-    "end": "",
-    "delete": "",
-    "insert": "",
-    "pause": ""
-}
-        """)
+        save.write(script.data)
         exit()
 
 class LogHandler():
@@ -66,14 +46,15 @@ logging.basicConfig(
 if __name__ == "__main__":
     log_handler = LogHandler()
     while True:
+        importlib.reload(save)
         try:
             key = read_key()
-            if key in mapping:
-                if mapping[key] != "":
-                    webbrowser.open(url=mapping[key])
+            if key in save.mapping:
+                if save.mapping[key] != "":
+                    webbrowser.open(url=save.mapping[key])
                     log_handler.print_logs(
                         key = key,
-                        url = mapping[key]
+                        url = save.mapping[key]
                     )
                     sleep(1)
                 else:
